@@ -1,0 +1,36 @@
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.btn_container {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.btn {
+  margin: 5pt;
+  display: flex;
+  margin-bottom: 20pt;
+  height: auto;
+  width: auto;
+}
+
+mat-icon {
+  font-size: 50px;
+  height: 50px;
+  width: 50px;
+}
+
+.title {
+  font-family: "Monsieur";
+  font-size: 56pt;
+  color: cornflowerblue;
+  margin: 25pt;
+  flex-grow: 0;
+}
