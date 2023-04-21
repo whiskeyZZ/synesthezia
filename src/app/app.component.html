@@ -1,13 +1,23 @@
 <div class="container">
   <h1 class="title">S y n e s t h e z i a</h1>
   <div class="btn_container">
-    <button class="btn" mat-raised-button color="primary">
+    <button class="btn" mat-raised-button color="primary" (click)="openInfo()">
       <mat-icon>info</mat-icon>
     </button>
-    <button class="btn" mat-raised-button color="primary">
+    <button
+      class="btn"
+      mat-raised-button
+      color="primary"
+      (click)="showAudioFiles()"
+    >
       <mat-icon>audio_file</mat-icon>
     </button>
-    <button class="btn" mat-raised-button color="primary">
+    <button
+      class="btn"
+      mat-raised-button
+      color="primary"
+      (click)="openFileManager()"
+    >
       <mat-icon>file_upload</mat-icon>
     </button>
     <button class="btn" mat-raised-button color="primary">
@@ -18,6 +28,9 @@
     </button>
     <button class="btn" mat-icon-button color="primary">
       <mat-icon>radio_button_unchecked</mat-icon>
+    </button>
+    <button class="btn" mat-icon-button color="primary">
+      <mat-icon>file_download</mat-icon>
     </button>
   </div>
 </div>
