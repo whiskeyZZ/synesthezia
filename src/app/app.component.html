@@ -8,8 +8,14 @@
       <p class="subtitle">Delay</p>
     </div>
     <div>
-      <div class="field" id="cutoff">
-        <div class="cursor" cdkDragBoundary=".field" cdkDrag></div>
+      <div #cutoffField class="field" id="cutoff">
+        <div
+          #cutoffCursor
+          class="cursor"
+          cdkDragBoundary=".field"
+          cdkDrag
+          (mousemove)="calcCutoff()"
+        ></div>
       </div>
       <p class="subtitle">Cutoff</p>
     </div>
