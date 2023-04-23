@@ -35,11 +35,19 @@ mat-icon {
   flex-grow: 0;
 }
 
+.field_container {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+}
+
 .field {
-  width: 500px;
-  height: 300px;
-  background-color: #ccc;
+  width: 450px;
+  height: 250px;
   position: relative;
+  display: flex;
+  margin: 20pt;
+  margin-top: 300pt;
 }
 
 .cursor {
@@ -47,5 +55,23 @@ mat-icon {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background-color: red;
+  background-color: black;
+}
+
+#cutoff {
+  background-color: cadetblue;
+}
+
+#reverb {
+  background-color: aquamarine;
+}
+
+#delay {
+  background-color: cornflowerblue;
+}
+
+.subtitle {
+  color: aliceblue;
+  text-align: center;
+  font-size: 18pt;
 }
