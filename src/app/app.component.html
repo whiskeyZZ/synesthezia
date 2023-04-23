@@ -1,5 +1,10 @@
 <div class="container">
   <h1 class="title">S y n e s t h e z i a</h1>
+  <div>
+    <div class="field" id="cutoff">
+      <div class="cursor" cdkDragBoundary=".field" cdkDrag></div>
+    </div>
+  </div>
   <div class="btn_container">
     <button class="btn" mat-raised-button color="primary" (click)="openInfo()">
       <mat-icon>info</mat-icon>
@@ -8,10 +13,19 @@
       class="btn"
       mat-raised-button
       color="primary"
-      (click)="showAudioFiles()"
+      [matMenuTriggerFor]="menu"
     >
       <mat-icon>audio_file</mat-icon>
     </button>
+    <mat-menu #menu="matMenu">
+      <button
+        mat-menu-item
+        *ngFor="let file of audioFiles"
+        (click)="chooseFile(file)"
+      >
+        {{ file.name }}
+      </button>
+    </mat-menu>
     <button
       class="btn"
       mat-raised-button
@@ -23,7 +37,7 @@
     <button class="btn" mat-raised-button color="primary">
       <mat-icon>mic</mat-icon>
     </button>
-    <button class="btn" mat-raised-button color="primary">
+    <button class="btn" mat-raised-button color="primary" (click)="play()">
       <mat-icon>play_circle</mat-icon>
     </button>
     <button class="btn" mat-icon-button color="primary">

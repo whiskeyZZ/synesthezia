@@ -8,6 +8,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDialogModule } from '@angular/material/dialog';
 import { InfoDialogComponent } from './info-dialog/info-dialog.component';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatMenuModule } from '@angular/material/menu';
+
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+
+import { DragDropModule } from '@angular/cdk/drag-drop';
 
 @NgModule({
   declarations: [AppComponent, InfoDialogComponent],
@@ -17,6 +22,9 @@ import { MatFormFieldModule } from '@angular/material/form-field';
     MatIconModule,
     MatDialogModule,
     MatFormFieldModule,
+    MatMenuModule,
+    BrowserAnimationsModule,
+    DragDropModule,
   ],
   providers: [],
   bootstrap: [AppComponent],
