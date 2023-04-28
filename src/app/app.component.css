@@ -47,7 +47,7 @@ mat-icon {
   position: relative;
   display: flex;
   margin: 20pt;
-  margin-top: 300pt;
+  margin-top: 100pt;
 }
 
 .cursor {
@@ -59,19 +59,36 @@ mat-icon {
 }
 
 #cutoff {
-  background-color: cadetblue;
+  background-image: linear-gradient(
+    to right,
+    rgb(43, 55, 56),
+    rgb(0, 242, 255)
+  );
 }
 
 #reverb {
-  background-color: aquamarine;
+  background-image: linear-gradient(
+    to right,
+    rgb(39, 80, 39),
+    rgb(37, 240, 172)
+  );
 }
 
 #delay {
-  background-color: cornflowerblue;
+  background-image: linear-gradient(
+    to right,
+    rgb(12, 32, 70),
+    rgb(129, 162, 224)
+  );
 }
 
 .subtitle {
   color: aliceblue;
   text-align: center;
   font-size: 18pt;
+}
+
+#graph {
+  background-color: black;
+  width: 400pt;
 }

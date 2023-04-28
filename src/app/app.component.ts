@@ -17,6 +17,10 @@ export class AppComponent {
 
   filter = this.context.createBiquadFilter();
 
+  analyser: AnalyserNode = this.context.createAnalyser();
+
+  canvas: HTMLCanvasElement | null = null;
+
   audioFiles: File[] = [];
   fileList: FileList | null = null;
   currentAudio: File | null = null;
@@ -33,6 +37,14 @@ export class AppComponent {
 
   constructor(public dialog: MatDialog) {
     this.addAudioFiles();
+
+    this.analyser.fftSize = 2048;
+    const bufferLength = this.analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+  }
+
+  ngOnInit() {
+    this.canvas = <HTMLCanvasElement>document.getElementById('graph');
   }
 
   openInfo(): void {
@@ -97,11 +109,12 @@ export class AppComponent {
         this.filter.type = 'bandpass';
         this.filter.frequency.value = this.cutoff;
         this.filter.Q.value = this.qFactor;
-        this.source.connect(this.filter).connect(this.context.destination);
-      } else {
-        this.source.connect(this.context.destination);
+        this.source.connect(this.filter);
       }
+      this.filter.connect(this.analyser);
+      this.analyser.connect(this.context.destination);
       this.source.start();
+      this.draw();
     } else {
       this.isPlaying = false;
       if (this.source != null) {
@@ -133,6 +146,36 @@ export class AppComponent {
 
     this.filter.frequency.value = this.cutoff;
     this.filter.Q.value = this.qFactor;
-    console.log(this.qFactor);
+  }
+
+  draw() {
+    const bufferLength = this.analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    requestAnimationFrame(this.draw.bind(this));
+
+    this.analyser.getByteFrequencyData(dataArray);
+
+    if (this.canvas != null) {
+      const WIDTH = this.canvas.width;
+      const HEIGHT = this.canvas.height;
+
+      var graph = this.canvas.getContext('2d');
+
+      if (graph != null) {
+        graph.fillStyle = 'rgb(0, 0, 0)';
+        graph.fillRect(0, 0, WIDTH, HEIGHT);
+        const barWidth = (WIDTH / bufferLength) * 5;
+        let barHeight;
+        let x = 0;
+        for (let i = 0; i < bufferLength; i++) {
+          barHeight = dataArray[i];
+
+          graph.fillStyle = `rgb(255, 255, 255)`; //`rgb(${barHeight + 100}, 50, 50)`;
+          graph.fillRect(x, HEIGHT - barHeight / 2, barWidth, barHeight);
+
+          x += barWidth + 1;
+        }
+      }
+    }
   }
 }
