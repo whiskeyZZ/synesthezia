@@ -1,7 +1,8 @@
-import { HttpContext } from '@angular/common/http';
+import * as RecordRTC from 'recordrtc';
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatMenuTrigger } from '@angular/material/menu';
+import { DomSanitizer } from '@angular/platform-browser';
 import { InfoDialogComponent } from './info-dialog/info-dialog.component';
 
 @Component({
@@ -26,18 +27,21 @@ export class AppComponent {
   fileList: FileList | null = null;
   currentAudio: File | null = null;
 
-  isPlaying: boolean = false;
-
   @ViewChild(MatMenuTrigger) trigger!: MatMenuTrigger;
   @ViewChild('cutoffCursor') cutoffCursor!: ElementRef;
   @ViewChild('cutoffField') cutoffField!: ElementRef;
 
+  isPlaying: boolean = false;
   isCutoff: boolean = true;
   cutoff: number = 50;
   cutoffHigh: number = 20;
   qFactor: number = 2;
 
-  constructor(public dialog: MatDialog) {
+  record: any;
+  isRecording = false;
+  url: any;
+
+  constructor(public dialog: MatDialog, private domSanitizer: DomSanitizer) {
     this.addAudioFiles();
 
     this.analyser.fftSize = 2048;
@@ -185,5 +189,58 @@ export class AppComponent {
         }
       }
     }
+  }
+
+  recording() {
+    if (this.isRecording == false) {
+      this.initiateRecording();
+    } else {
+      this.stopRecording();
+    }
+  }
+
+  sanitize(url: string) {
+    return this.domSanitizer.bypassSecurityTrustUrl(url);
+  }
+
+  initiateRecording() {
+    this.isRecording = true;
+    let mediaConstraints = {
+      video: false,
+      audio: true,
+    };
+    navigator.mediaDevices
+      .getUserMedia(mediaConstraints)
+      .then(this.successCallback.bind(this));
+  }
+
+  successCallback(stream: any) {
+    var options = {
+      mimeType: 'audio/wav',
+      numberOfAudioChannels: 1,
+      sampleRate: 16000,
+    };
+    //Start Actuall Recording
+    var StereoAudioRecorder = RecordRTC.StereoAudioRecorder;
+    this.record = new StereoAudioRecorder(stream, {
+      sampleRate: 44100,
+      bufferSize: 4096,
+    });
+    this.record.record();
+  }
+
+  stopRecording() {
+    this.isRecording = false;
+    this.record.stop(this.processRecording.bind(this));
+  }
+
+  processRecording(blob: Blob) {
+    this.url = URL.createObjectURL(blob);
+    console.log('blob', blob);
+    console.log('url', this.url);
+    let dateTime = new Date();
+    let dateTimeString = dateTime.toLocaleString();
+    const file = new File([blob], 'record_' + dateTimeString);
+    this.audioFiles.push(file);
   }
 }
