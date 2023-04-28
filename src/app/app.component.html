@@ -18,7 +18,7 @@
           (mousemove)="calcCutoff()"
         ></div>
       </div>
-      <p class="subtitle">Cutoff</p>
+      <p #cutoffTitle class="subtitle" (click)="activateCutoff()">Cutoff</p>
     </div>
     <div>
       <div class="field" id="reverb">

@@ -86,6 +86,11 @@ mat-icon {
   color: aliceblue;
   text-align: center;
   font-size: 18pt;
+  opacity: 50%;
+}
+
+.subtitle:hover {
+  cursor: pointer;
 }
 
 #graph {

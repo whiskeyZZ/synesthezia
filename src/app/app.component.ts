@@ -30,9 +30,10 @@ export class AppComponent {
   @ViewChild(MatMenuTrigger) trigger!: MatMenuTrigger;
   @ViewChild('cutoffCursor') cutoffCursor!: ElementRef;
   @ViewChild('cutoffField') cutoffField!: ElementRef;
+  @ViewChild('cutoffTitle') cutoffTitle!: ElementRef;
 
   isPlaying: boolean = false;
-  isCutoff: boolean = true;
+  isCutoff: boolean = false;
   cutoff: number = 50;
   cutoffHigh: number = 20;
   qFactor: number = 2;
@@ -120,8 +121,11 @@ export class AppComponent {
         this.filterHigh.frequency.value = this.cutoffHigh;
         this.filterHigh.Q.value = this.qFactor;
         this.filterLow.connect(this.filterHigh);
+        this.filterHigh.connect(this.analyser);
+      } else {
+        this.source.connect(this.analyser);
       }
-      this.filterHigh.connect(this.analyser);
+
       this.analyser.connect(this.context.destination);
       this.source.start();
       this.draw();
@@ -242,5 +246,15 @@ export class AppComponent {
     let dateTimeString = dateTime.toLocaleString();
     const file = new File([blob], 'record_' + dateTimeString);
     this.audioFiles.push(file);
+  }
+
+  activateCutoff() {
+    if (this.isCutoff == false) {
+      this.isCutoff = true;
+      this.cutoffTitle.nativeElement.style.opacity = '1.0';
+    } else {
+      this.isCutoff = false;
+      this.cutoffTitle.nativeElement.style.opacity = '0.5';
+    }
   }
 }
