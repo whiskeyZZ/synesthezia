@@ -15,7 +15,8 @@ export class AppComponent {
   buffer: AudioBuffer | null = null;
   source: AudioBufferSourceNode | null = null;
 
-  filter = this.context.createBiquadFilter();
+  filterLow = this.context.createBiquadFilter();
+  filterHigh = this.context.createBiquadFilter();
 
   analyser: AnalyserNode = this.context.createAnalyser();
 
@@ -33,6 +34,7 @@ export class AppComponent {
 
   isCutoff: boolean = true;
   cutoff: number = 50;
+  cutoffHigh: number = 20;
   qFactor: number = 2;
 
   constructor(public dialog: MatDialog) {
@@ -106,12 +108,16 @@ export class AppComponent {
       this.source = this.context.createBufferSource();
       this.source.buffer = this.buffer;
       if (this.isCutoff) {
-        this.filter.type = 'bandpass';
-        this.filter.frequency.value = this.cutoff;
-        this.filter.Q.value = this.qFactor;
-        this.source.connect(this.filter);
+        this.filterLow.type = 'lowpass';
+        this.filterLow.frequency.value = this.cutoff;
+        this.filterLow.Q.value = this.qFactor;
+        this.source.connect(this.filterLow);
+        this.filterHigh.type = 'highpass';
+        this.filterHigh.frequency.value = this.cutoffHigh;
+        this.filterHigh.Q.value = this.qFactor;
+        this.filterLow.connect(this.filterHigh);
       }
-      this.filter.connect(this.analyser);
+      this.filterHigh.connect(this.analyser);
       this.analyser.connect(this.context.destination);
       this.source.start();
       this.draw();
@@ -130,7 +136,7 @@ export class AppComponent {
     const rectCursor = this.cutoffCursor.nativeElement.getBoundingClientRect();
     const c = rectCursor.left;
     const x = (c - l) / (r - l);
-    this.cutoff = 14000 * x;
+    this.cutoff = 17000 * x;
     if (this.cutoff < 20) {
       this.cutoff = 20;
     }
@@ -139,13 +145,15 @@ export class AppComponent {
     const d = rect.bottom;
     const cTop = rectCursor.top;
     const y = (t - cTop) / (t - d);
-    this.qFactor = 20 * y;
-    if (this.qFactor < 0.5) {
-      this.qFactor = 0.5;
+
+    if (y != 0) {
+      this.cutoffHigh = 200 * (1 / y);
+    } else {
+      this.cutoffHigh = 17000;
     }
 
-    this.filter.frequency.value = this.cutoff;
-    this.filter.Q.value = this.qFactor;
+    this.filterLow.frequency.value = this.cutoff;
+    this.filterHigh.frequency.value = this.cutoffHigh;
   }
 
   draw() {
