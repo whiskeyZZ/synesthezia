@@ -3,8 +3,14 @@
   <canvas id="graph"> </canvas>
   <div class="field_container">
     <div>
-      <div class="field" id="delay">
-        <div class="cursor" cdkDragBoundary=".field" cdkDrag></div>
+      <div #delayField class="field" id="delay">
+        <div
+          #delayCursor
+          class="cursor"
+          cdkDragBoundary=".field"
+          cdkDrag
+          (mousemove)="calcDelay()"
+        ></div>
       </div>
       <p class="subtitle">Delay</p>
     </div>

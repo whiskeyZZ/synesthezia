@@ -18,6 +18,8 @@ export class AppComponent {
 
   filterLow = this.context.createBiquadFilter();
   filterHigh = this.context.createBiquadFilter();
+  delay = this.context.createDelay();
+  feedback = this.context.createGain();
 
   analyser: AnalyserNode = this.context.createAnalyser();
 
@@ -31,11 +33,16 @@ export class AppComponent {
   @ViewChild('cutoffCursor') cutoffCursor!: ElementRef;
   @ViewChild('cutoffField') cutoffField!: ElementRef;
   @ViewChild('cutoffTitle') cutoffTitle!: ElementRef;
+  @ViewChild('delayCursor') delayCursor!: ElementRef;
+  @ViewChild('delayField') delayField!: ElementRef;
 
   isPlaying: boolean = false;
   isCutoff: boolean = false;
+  isDelay: boolean = true;
   cutoff: number = 50;
   cutoffHigh: number = 20;
+  delayTime: number = 1;
+  delayFeedback: number = 0.1;
   qFactor: number = 2;
 
   record: any;
@@ -110,7 +117,8 @@ export class AppComponent {
   play() {
     if (this.isPlaying == false) {
       this.isPlaying = true;
-      this.source = this.context.createBufferSource();
+      this.setEffects();
+      /*this.source = this.context.createBufferSource();
       this.source.buffer = this.buffer;
       if (this.isCutoff) {
         this.filterLow.type = 'lowpass';
@@ -125,16 +133,56 @@ export class AppComponent {
       } else {
         this.source.connect(this.analyser);
       }
-
+      
       this.analyser.connect(this.context.destination);
       this.source.start();
-      this.draw();
+      this.draw();*/
     } else {
       this.isPlaying = false;
       if (this.source != null) {
         this.source.stop();
       }
     }
+  }
+
+  setEffects() {
+    this.source = this.context.createBufferSource();
+    this.source.buffer = this.buffer;
+    this.setCutoff(this.source);
+    this.setDelay(this.source);
+    this.analyser.connect(this.context.destination);
+    this.source.start();
+    this.draw();
+  }
+
+  setCutoff(source: AudioBufferSourceNode) {
+    if (this.isCutoff) {
+      this.filterLow.type = 'lowpass';
+      this.filterLow.frequency.value = this.cutoff;
+      this.filterLow.Q.value = this.qFactor;
+      source.connect(this.filterLow);
+      this.filterHigh.type = 'highpass';
+      this.filterHigh.frequency.value = this.cutoffHigh;
+      this.filterHigh.Q.value = this.qFactor;
+      this.filterLow.connect(this.filterHigh);
+      if (!this.isDelay) {
+        this.filterHigh.connect(this.analyser);
+      }
+    }
+  }
+
+  setDelay(source: AudioBufferSourceNode) {
+    this.delay.delayTime.value = this.delayTime;
+    this.feedback.gain.value = this.delayFeedback;
+    if (this.isCutoff) {
+      this.filterHigh.connect(this.delay);
+    }
+    if (!this.isCutoff) {
+      source.connect(this.delay);
+    }
+    this.delay.connect(this.feedback);
+    this.feedback.connect(this.delay);
+    this.delay.connect(this.analyser);
   }
 
   calcCutoff() {
@@ -144,7 +192,7 @@ export class AppComponent {
     const rectCursor = this.cutoffCursor.nativeElement.getBoundingClientRect();
     const c = rectCursor.left;
     const x = (c - l) / (r - l);
-    this.cutoff = 17000 * x;
+    this.cutoff = 17000 * Math.pow(x, 2);
     if (this.cutoff < 20) {
       this.cutoff = 20;
     }
@@ -155,13 +203,32 @@ export class AppComponent {
     const y = (t - cTop) / (t - d);
 
     if (y != 0) {
-      this.cutoffHigh = 200 * (1 / y);
+      this.cutoffHigh = 200 * (1 / Math.pow(y, 2));
     } else {
       this.cutoffHigh = 17000;
     }
 
     this.filterLow.frequency.value = this.cutoff;
     this.filterHigh.frequency.value = this.cutoffHigh;
+  }
+
+  calcDelay() {
+    const rect = this.delayField.nativeElement.getBoundingClientRect();
+    const l = rect.left;
+    const r = rect.right;
+    const rectCursor = this.delayCursor.nativeElement.getBoundingClientRect();
+    const c = rectCursor.left;
+    const x = ((c - l) / (r - l)) * 4;
+    this.delayTime = x;
+
+    const t = rect.top;
+    const d = rect.bottom;
+    const cTop = rectCursor.top;
+    const y = (t - cTop) / (t - d);
+    this.delayFeedback = y;
+
+    this.delay.delayTime.value = this.delayTime;
+    this.feedback.gain.value = this.delayFeedback;
   }
 
   draw() {
