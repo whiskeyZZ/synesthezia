@@ -1,6 +1,7 @@
 <div class="container">
   <h1 class="title">S y n e s t h e z i a</h1>
   <canvas id="graph"> </canvas>
+  <canvas id="graph_mirror"></canvas>
   <div class="field_container">
     <div>
       <div #delayField class="field" id="delay">
@@ -66,7 +67,8 @@
       <mat-icon>mic</mat-icon>
     </button>
     <button class="btn" mat-raised-button color="primary" (click)="play()">
-      <mat-icon>play_circle</mat-icon>
+      <mat-icon *ngIf="isPlaying == false">play_circle</mat-icon>
+      <mat-icon *ngIf="isPlaying == true">stop_circle</mat-icon>
     </button>
     <button class="btn" mat-icon-button color="primary">
       <mat-icon>radio_button_unchecked</mat-icon>

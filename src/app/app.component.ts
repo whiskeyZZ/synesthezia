@@ -1,5 +1,5 @@
 import * as RecordRTC from 'recordrtc';
-import { Component, ElementRef, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatMenuTrigger } from '@angular/material/menu';
 import { DomSanitizer } from '@angular/platform-browser';
@@ -24,6 +24,7 @@ export class AppComponent {
   analyser: AnalyserNode = this.context.createAnalyser();
 
   canvas: HTMLCanvasElement | null = null;
+  canvasMirror: HTMLCanvasElement | null = null;
 
   audioFiles: File[] = [];
   fileList: FileList | null = null;
@@ -36,6 +37,9 @@ export class AppComponent {
   @ViewChild('delayCursor') delayCursor!: ElementRef;
   @ViewChild('delayField') delayField!: ElementRef;
 
+  graph: CanvasRenderingContext2D | null = null;
+  graphMirror: CanvasRenderingContext2D | null = null;
+
   isPlaying: boolean = false;
   isCutoff: boolean = false;
   isDelay: boolean = true;
@@ -44,6 +48,8 @@ export class AppComponent {
   delayTime: number = 1;
   delayFeedback: number = 0.1;
   qFactor: number = 2;
+
+  animationReq: number = 0;
 
   record: any;
   isRecording = false;
@@ -59,6 +65,11 @@ export class AppComponent {
 
   ngOnInit() {
     this.canvas = <HTMLCanvasElement>document.getElementById('graph');
+    this.canvasMirror = <HTMLCanvasElement>(
+      document.getElementById('graph_mirror')
+    );
+    this.graph = this.canvas.getContext('2d');
+    this.graphMirror = this.canvasMirror.getContext('2d');
   }
 
   openInfo(): void {
@@ -96,7 +107,7 @@ export class AppComponent {
     });
   }
 
-  chooseFile(file: File) {
+  chooseFile(file: File | null) {
     this.currentAudio = file;
     const reader = new FileReader();
     reader.onload = () => {
@@ -140,7 +151,10 @@ export class AppComponent {
     } else {
       this.isPlaying = false;
       if (this.source != null) {
+        this.context.suspend();
+        this.chooseFile(this.currentAudio);
         this.source.stop();
+        this.resetDraw();
       }
     }
   }
@@ -151,6 +165,7 @@ export class AppComponent {
     this.setCutoff(this.source);
     this.setDelay(this.source);
     this.analyser.connect(this.context.destination);
+    this.context.resume();
     this.source.start();
     this.draw();
   }
@@ -234,31 +249,64 @@ export class AppComponent {
   draw() {
     const bufferLength = this.analyser.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
-    requestAnimationFrame(this.draw.bind(this));
+    this.animationReq = requestAnimationFrame(this.draw.bind(this));
 
     this.analyser.getByteFrequencyData(dataArray);
 
-    if (this.canvas != null) {
+    if (this.canvas != null && this.canvasMirror != null) {
       const WIDTH = this.canvas.width;
       const HEIGHT = this.canvas.height;
 
-      var graph = this.canvas.getContext('2d');
-
-      if (graph != null) {
-        graph.fillStyle = 'rgb(0, 0, 0)';
-        graph.fillRect(0, 0, WIDTH, HEIGHT);
+      if (this.graph != null && this.graphMirror != null) {
+        this.graph.fillStyle = 'rgb(0, 0, 0)';
+        this.graphMirror.fillStyle = 'rgb(0,0,0)';
+        this.graph.fillRect(0, 0, WIDTH, HEIGHT);
+        this.graphMirror.fillRect(0, 0, WIDTH, HEIGHT);
         const barWidth = (WIDTH / bufferLength) * 5;
         let barHeight;
         let x = 0;
         for (let i = 0; i < bufferLength; i++) {
           barHeight = dataArray[i];
 
-          graph.fillStyle = `rgb(255, 255, 255)`; //`rgb(${barHeight + 100}, 50, 50)`;
-          graph.fillRect(x, HEIGHT - barHeight / 2, barWidth, barHeight);
+          this.graph.fillStyle = `rgb(255, 255, 255)`;
+          this.graphMirror.fillStyle = `rgb(255, 255, 255)`;
+          this.graph.fillRect(x, HEIGHT - barHeight / 2, barWidth, barHeight);
+          this.graphMirror.fillRect(
+            x,
+            HEIGHT - barHeight / 2,
+            barWidth,
+            barHeight
+          );
 
           x += barWidth + 1;
         }
       }
+    }
+  }
+
+  resetDraw() {
+    cancelAnimationFrame(this.animationReq);
+    if (
+      this.graph != null &&
+      this.graphMirror != null &&
+      this.canvas != null &&
+      this.canvasMirror != null
+    ) {
+      this.graph.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      this.graphMirror.clearRect(
+        0,
+        0,
+        this.canvasMirror.width,
+        this.canvasMirror.height
+      );
+    }
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  handleKeyboardEvent(event: KeyboardEvent) {
+    if (event.key === 'p') {
+      this.play();
+      console.log('p');
     }
   }
 

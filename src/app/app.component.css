@@ -96,4 +96,14 @@ mat-icon {
 #graph {
   background-color: black;
   width: 400pt;
+  height: 100pt;
+  margin-top: 0pt;
+}
+
+#graph_mirror {
+  background-color: black;
+  width: 400pt;
+  height: 100pt;
+  transform: scale(1, -1);
+  filter: FlipV;
 }
