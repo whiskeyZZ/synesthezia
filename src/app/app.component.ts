@@ -4,6 +4,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatMenuTrigger } from '@angular/material/menu';
 import { DomSanitizer } from '@angular/platform-browser';
 import { InfoDialogComponent } from './info-dialog/info-dialog.component';
+import 'http://reverbjs.org/reverb.js';
 
 @Component({
   selector: 'app-root',
@@ -20,6 +21,12 @@ export class AppComponent {
   filterHigh = this.context.createBiquadFilter();
   delay = this.context.createDelay();
   feedback = this.context.createGain();
+  reverb = this.context.createConvolver();
+  reverbDelay = this.context.createDelay(1);
+  multitap: Array<DelayNode> = [];
+  multitapGain = this.context.createGain();
+  dryGain = this.context.createGain();
+  wetGain = this.context.createGain();
 
   analyser: AnalyserNode = this.context.createAnalyser();
 
@@ -36,6 +43,8 @@ export class AppComponent {
   @ViewChild('cutoffTitle') cutoffTitle!: ElementRef;
   @ViewChild('delayCursor') delayCursor!: ElementRef;
   @ViewChild('delayField') delayField!: ElementRef;
+  @ViewChild('reverbCursor') reverbCursor!: ElementRef;
+  @ViewChild('reverbField') reverbField!: ElementRef;
 
   graph: CanvasRenderingContext2D | null = null;
   graphMirror: CanvasRenderingContext2D | null = null;
@@ -129,25 +138,6 @@ export class AppComponent {
     if (this.isPlaying == false) {
       this.isPlaying = true;
       this.setEffects();
-      /*this.source = this.context.createBufferSource();
-      this.source.buffer = this.buffer;
-      if (this.isCutoff) {
-        this.filterLow.type = 'lowpass';
-        this.filterLow.frequency.value = this.cutoff;
-        this.filterLow.Q.value = this.qFactor;
-        this.source.connect(this.filterLow);
-        this.filterHigh.type = 'highpass';
-        this.filterHigh.frequency.value = this.cutoffHigh;
-        this.filterHigh.Q.value = this.qFactor;
-        this.filterLow.connect(this.filterHigh);
-        this.filterHigh.connect(this.analyser);
-      } else {
-        this.source.connect(this.analyser);
-      }
-      
-      this.analyser.connect(this.context.destination);
-      this.source.start();
-      this.draw();*/
     } else {
       this.isPlaying = false;
       if (this.source != null) {
@@ -164,6 +154,7 @@ export class AppComponent {
     this.source.buffer = this.buffer;
     this.setCutoff(this.source);
     this.setDelay(this.source);
+    this.setReverb();
     this.analyser.connect(this.context.destination);
     this.context.resume();
     this.source.start();
@@ -197,7 +188,38 @@ export class AppComponent {
     }
     this.delay.connect(this.feedback);
     this.feedback.connect(this.delay);
-    this.delay.connect(this.analyser);
+    //this.delay.connect(this.analyser);
+  }
+
+  setReverb() {
+    this.reverbDelay.delayTime.setValueAtTime(0.03, this.context.currentTime);
+
+    for (let i = 2; i > 0; i--) {
+      this.multitap.push(this.context.createDelay(1));
+    }
+    this.multitap.map((t, i) => {
+      if (this.multitap[i + 1]) {
+        t.connect(this.multitap[i + 1]);
+      }
+      t.delayTime.setValueAtTime(
+        0.001 + i * (0.03 / 2),
+        this.context.currentTime
+      );
+    });
+
+    this.multitap[this.multitap.length - 1].connect(this.multitapGain);
+    this.multitapGain.gain.value = 0.5;
+    this.multitapGain.connect(this.analyser);
+
+    this.dryGain.gain.value = 0.2;
+    this.wetGain.gain.value = 1.0;
+
+    this.delay.connect(this.dryGain);
+    this.dryGain.connect(this.reverbDelay);
+    this.dryGain.connect(this.multitap[0]);
+    this.reverbDelay.connect(this.reverb);
+    this.reverb.connect(this.wetGain);
+    this.wetGain.connect(this.analyser);
   }
 
   calcCutoff() {
@@ -244,6 +266,22 @@ export class AppComponent {
 
     this.delay.delayTime.value = this.delayTime;
     this.feedback.gain.value = this.delayFeedback;
+  }
+
+  calcReverb() {
+    const rect = this.reverbField.nativeElement.getBoundingClientRect();
+    const l = rect.left;
+    const r = rect.right;
+    const t = rect.top;
+    const d = rect.bottom;
+    const rectCursor = this.reverbCursor.nativeElement.getBoundingClientRect();
+    const c = rectCursor.left;
+    let x = ((c - l) / (r - l)) * 5;
+    if (x < 1) {
+      x = 1;
+    }
+
+    this.reverbDelay.delayTime.value = x;
   }
 
   draw() {
@@ -306,7 +344,6 @@ export class AppComponent {
   handleKeyboardEvent(event: KeyboardEvent) {
     if (event.key === 'p') {
       this.play();
-      console.log('p');
     }
   }
 

@@ -28,8 +28,13 @@
       <p #cutoffTitle class="subtitle" (click)="activateCutoff()">Cutoff</p>
     </div>
     <div>
-      <div class="field" id="reverb">
-        <div class="cursor" cdkDragBoundary=".field" cdkDrag></div>
+      <div #reverbField class="field" id="reverb">
+        <div
+          #reverbCursor
+          class="cursor"
+          cdkDragBoundary=".field"
+          cdkDrag
+        ></div>
       </div>
       <p class="subtitle">Reverb</p>
     </div>
