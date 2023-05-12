@@ -13,7 +13,7 @@
           (mousemove)="calcDelay()"
         ></div>
       </div>
-      <p class="subtitle">Delay</p>
+      <p #delayTitle class="subtitle" (click)="activateDelay()">Delay</p>
     </div>
     <div>
       <div #cutoffField class="field" id="cutoff">
@@ -34,9 +34,10 @@
           class="cursor"
           cdkDragBoundary=".field"
           cdkDrag
+          (mousemove)="calcReverb()"
         ></div>
       </div>
-      <p class="subtitle">Reverb</p>
+      <p #reverbTitle class="subtitle" (click)="activateReverb()">Reverb</p>
     </div>
   </div>
   <div class="btn_container">
