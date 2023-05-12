@@ -170,9 +170,26 @@ export class AppComponent {
     this.trigger.openMenu();
   }
 
+  createNodes() {
+    this.context = new AudioContext();
+    this.filterLow = this.context.createBiquadFilter();
+    this.filterHigh = this.context.createBiquadFilter();
+    this.delay = this.context.createDelay();
+    this.feedback = this.context.createGain();
+    this.reverb = this.context.createConvolver();
+    this.reverbDelay = this.context.createDelay(1);
+    //multitap: Array<DelayNode> = [];
+    this.multitapGain = this.context.createGain();
+    this.dryGain = this.context.createGain();
+    this.wetGain = this.context.createGain();
+
+    this.analyser = this.context.createAnalyser();
+  }
+
   play() {
     if (this.isPlaying == false) {
       this.isPlaying = true;
+      this.createNodes();
       this.setEffects();
     } else {
       this.isPlaying = false;
@@ -227,7 +244,7 @@ export class AppComponent {
       }
     }
     this.analyser.connect(this.context.destination);
-    this.context.resume();
+    //this.context.resume();
     this.source.start();
     this.draw();
   }
@@ -244,7 +261,8 @@ export class AppComponent {
           this.delay.connect(this.filterLow);
         }
         if (this.chain[position - 1] == 'reverb') {
-          this.reverb.connect(this.filterLow);
+          this.dryGain.connect(this.filterLow);
+          this.wetGain.connect(this.filterLow);
         }
       }
       this.filterHigh.type = 'highpass';
@@ -267,7 +285,8 @@ export class AppComponent {
         this.filterHigh.connect(this.delay);
       }
       if (this.chain[position - 1] == 'reverb') {
-        this.reverb.connect(this.delay);
+        this.dryGain.connect(this.delay);
+        this.wetGain.connect(this.delay);
       }
     }
     /*if (this.isCutoff) {
@@ -287,7 +306,7 @@ export class AppComponent {
   setReverb(source: AudioBufferSourceNode, position: number) {
     this.reverbDelay.delayTime.setValueAtTime(0.03, this.context.currentTime);
 
-    for (let i = 2; i > 0; i--) {
+    /*for (let i = 2; i > 0; i--) {
       this.multitap.push(this.context.createDelay(1));
     }
     this.multitap.map((t, i) => {
@@ -327,8 +346,6 @@ export class AppComponent {
       this.dryGain.connect(this.analyser);
       this.wetGain.connect(this.analyser);
     }
-
-    console.log(this.chain);
   }
 
   calcCutoff() {
@@ -395,6 +412,7 @@ export class AppComponent {
   }
 
   draw() {
+    //this.analyser.fftSize = 248;
     const bufferLength = this.analyser.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
     this.animationReq = requestAnimationFrame(this.draw.bind(this));
@@ -416,8 +434,13 @@ export class AppComponent {
         for (let i = 0; i < bufferLength; i++) {
           barHeight = dataArray[i];
 
-          this.graph.fillStyle = `rgb(255, 255, 255)`;
-          this.graphMirror.fillStyle = `rgb(255, 255, 255)`;
+          const red = i * 2;
+          const green = i * 4;
+          const blue = i * 6;
+
+          this.graph.fillStyle = 'rgb(' + red + ',' + green + ',' + blue + ')';
+          this.graphMirror.fillStyle =
+            'rgb(' + red + ',' + green + ',' + blue + ')';
           this.graph.fillRect(x, HEIGHT - barHeight / 2, barWidth, barHeight);
           this.graphMirror.fillRect(
             x,
