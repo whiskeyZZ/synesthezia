@@ -5,6 +5,8 @@ import { MatMenuTrigger } from '@angular/material/menu';
 import { DomSanitizer } from '@angular/platform-browser';
 import { InfoDialogComponent } from './info-dialog/info-dialog.component';
 
+//TODO: choosing different impulses, live adding of effects
+
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -21,12 +23,17 @@ export class AppComponent {
   filterHigh = this.context.createBiquadFilter();
   delay = this.context.createDelay();
   feedback = this.context.createGain();
-  reverb = this.context.createConvolver();
   reverbDelay = this.context.createDelay(1);
-  multitap: Array<DelayNode> = [];
-  multitapGain = this.context.createGain();
+
+  //reverb nodes
+  input = this.context.createGain();
+  activateNode = this.context.createGain();
+  reverb = this.context.createConvolver();
   dryGain = this.context.createGain();
+  filterLowReverb = this.context.createBiquadFilter();
+  filterHighReverb = this.context.createBiquadFilter();
   wetGain = this.context.createGain();
+  output = this.context.createGain();
 
   analyser: AnalyserNode = this.context.createAnalyser();
 
@@ -60,6 +67,8 @@ export class AppComponent {
   cutoffHigh: number = 20;
   delayTime: number = 1;
   delayFeedback: number = 0.1;
+  dryGainValue: number = 0.5;
+  wetGainValue: number = 0.5;
   qFactor: number = 2;
   chain: string[] = [];
 
@@ -138,7 +147,7 @@ export class AppComponent {
 
   loadImpulseFiles() {
     const soundPath = 'assets/impulses/';
-    const soundFileNames = ['punch.wav'];
+    const soundFileNames = ['large.wav', 'punch.wav'];
 
     soundFileNames.forEach((fileName) => {
       fetch(soundPath + fileName)
@@ -151,17 +160,16 @@ export class AppComponent {
   }
 
   getImpulseBuffer() {
-    console.log('Test234');
     console.log(this.impulseFiles);
     const reader = new FileReader();
     reader.onload = () => {
-      console.log('test333');
       const arrayBuffer = reader.result as ArrayBuffer;
       this.context.decodeAudioData(arrayBuffer, (audioBuffer) => {
         this.impulseBuffer = audioBuffer;
       });
     };
     if (this.impulseFiles[0] != null) {
+      console.log(this.impulseFiles[0]);
       reader.readAsArrayBuffer(this.impulseFiles[0]);
     }
   }
@@ -176,14 +184,18 @@ export class AppComponent {
     this.filterHigh = this.context.createBiquadFilter();
     this.delay = this.context.createDelay();
     this.feedback = this.context.createGain();
-    this.reverb = this.context.createConvolver();
     this.reverbDelay = this.context.createDelay(1);
-    //multitap: Array<DelayNode> = [];
-    this.multitapGain = this.context.createGain();
-    this.dryGain = this.context.createGain();
-    this.wetGain = this.context.createGain();
 
     this.analyser = this.context.createAnalyser();
+
+    this.input = this.context.createGain();
+    this.activateNode = this.context.createGain();
+    this.reverb = this.context.createConvolver();
+    this.dryGain = this.context.createGain();
+    this.filterLowReverb = this.context.createBiquadFilter();
+    this.filterHighReverb = this.context.createBiquadFilter();
+    this.wetGain = this.context.createGain();
+    this.output = this.context.createGain();
   }
 
   play() {
@@ -205,9 +217,7 @@ export class AppComponent {
   setEffects() {
     this.source = this.context.createBufferSource();
     this.source.buffer = this.buffer;
-    /*this.setCutoff(this.source);
-    this.setDelay(this.source);
-    this.setReverb();*/
+
     if (this.chain.length > 0) {
       if (this.chain[0] == 'cutoff') {
         this.setCutoff(this.source, 0);
@@ -244,7 +254,6 @@ export class AppComponent {
       }
     }
     this.analyser.connect(this.context.destination);
-    //this.context.resume();
     this.source.start();
     this.draw();
   }
@@ -261,8 +270,7 @@ export class AppComponent {
           this.delay.connect(this.filterLow);
         }
         if (this.chain[position - 1] == 'reverb') {
-          this.dryGain.connect(this.filterLow);
-          this.wetGain.connect(this.filterLow);
+          this.output.connect(this.filterLow);
         }
       }
       this.filterHigh.type = 'highpass';
@@ -285,66 +293,48 @@ export class AppComponent {
         this.filterHigh.connect(this.delay);
       }
       if (this.chain[position - 1] == 'reverb') {
-        this.dryGain.connect(this.delay);
-        this.wetGain.connect(this.delay);
+        this.output.connect(this.delay);
       }
     }
-    /*if (this.isCutoff) {
-      this.filterHigh.connect(this.delay);
-    }
-    if (!this.isCutoff) {
-      source.connect(this.delay);
-    }*/
     this.delay.connect(this.feedback);
     this.feedback.connect(this.delay);
     if (this.chain[this.chain.length - 1] == 'delay') {
       this.delay.connect(this.analyser);
     }
-    //this.delay.connect(this.analyser);
   }
 
   setReverb(source: AudioBufferSourceNode, position: number) {
-    this.reverbDelay.delayTime.setValueAtTime(0.03, this.context.currentTime);
-
-    /*for (let i = 2; i > 0; i--) {
-      this.multitap.push(this.context.createDelay(1));
-    }
-    this.multitap.map((t, i) => {
-      if (this.multitap[i + 1]) {
-        t.connect(this.multitap[i + 1]);
-      }
-      t.delayTime.setValueAtTime(
-        0.001 + i * (0.03 / 2),
-        this.context.currentTime
-      );
-    });
-
-    /*this.multitap[this.multitap.length - 1].connect(this.multitapGain);
-    this.multitapGain.gain.value = 0.5;
-    this.multitapGain.connect(this.analyser);*/
-
-    this.dryGain.gain.value = 0.1;
-    this.wetGain.gain.value = 0.9;
     if (position == 0) {
-      source.connect(this.reverb);
-      source.connect(this.dryGain);
+      source.connect(this.activateNode);
     } else {
       if (this.chain[position - 1] == 'cutoff') {
-        this.filterHigh.connect(this.reverb);
-        this.filterHigh.connect(this.dryGain);
+        this.filterHigh.connect(this.activateNode);
       }
       if (this.chain[position - 1] == 'delay') {
-        this.delay.connect(this.reverb);
-        this.delay.connect(this.dryGain);
+        this.delay.connect(this.activateNode);
       }
     }
     this.getImpulseBuffer();
     this.reverb.buffer = this.impulseBuffer;
+    this.activateNode.connect(this.filterLowReverb);
+    this.activateNode.connect(this.dryGain);
+    this.filterLowReverb.connect(this.filterHighReverb);
+    this.filterHighReverb.connect(this.reverb);
     this.reverb.connect(this.wetGain);
+    this.wetGain.connect(this.output);
+    this.dryGain.connect(this.output);
+
+    this.activateNode.gain.value = 1;
+    this.dryGain.gain.value = this.dryGainValue;
+    this.wetGain.gain.value = this.wetGainValue;
+    this.filterLowReverb.type = 'lowpass';
+    this.filterHighReverb.type = 'highpass';
+    this.filterLowReverb.frequency.value = 19000;
+    this.filterHighReverb.frequency.value = 20;
+    this.output.gain.value = 1;
 
     if (this.chain[this.chain.length - 1] == 'reverb') {
-      this.dryGain.connect(this.analyser);
-      this.wetGain.connect(this.analyser);
+      this.output.connect(this.analyser);
     }
   }
 
@@ -402,17 +392,18 @@ export class AppComponent {
     const d = rect.bottom;
     const rectCursor = this.reverbCursor.nativeElement.getBoundingClientRect();
     const c = rectCursor.left;
+    const tc = rectCursor.top;
     let x = (c - l) / (r - l);
-    /*if (x < 1) {
-      x = 1;
-    }*/
 
-    this.dryGain.gain.value = 1.0 - x;
-    this.wetGain.gain.value = x;
+    let y = (tc - d) / (t - d);
+    this.dryGainValue = 1.0 - y;
+    this.wetGainValue = y;
+
+    this.dryGain.gain.value = this.dryGainValue;
+    this.wetGain.gain.value = this.wetGainValue;
   }
 
   draw() {
-    //this.analyser.fftSize = 248;
     const bufferLength = this.analyser.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
     this.animationReq = requestAnimationFrame(this.draw.bind(this));
@@ -509,7 +500,7 @@ export class AppComponent {
       numberOfAudioChannels: 1,
       sampleRate: 16000,
     };
-    //Start Actuall Recording
+
     var StereoAudioRecorder = RecordRTC.StereoAudioRecorder;
     this.record = new StereoAudioRecorder(stream, {
       sampleRate: 44100,
