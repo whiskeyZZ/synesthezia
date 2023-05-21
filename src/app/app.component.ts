@@ -5,7 +5,7 @@ import { MatMenuTrigger } from '@angular/material/menu';
 import { DomSanitizer } from '@angular/platform-browser';
 import { InfoDialogComponent } from './info-dialog/info-dialog.component';
 
-//TODO: choosing different impulses, live adding of effects
+//TODO: live adding of effects
 
 @Component({
   selector: 'app-root',
@@ -55,6 +55,12 @@ export class AppComponent {
   @ViewChild('reverbCursor') reverbCursor!: ElementRef;
   @ViewChild('reverbField') reverbField!: ElementRef;
   @ViewChild('reverbTitle') reverbTitle!: ElementRef;
+  @ViewChild('wahwahCursor') wahwahCursor!: ElementRef;
+  @ViewChild('wahwahField') wahwahField!: ElementRef;
+  @ViewChild('wahwahTitle') wahwahTitle!: ElementRef;
+  @ViewChild('overdriveCursor') overdriveCursor!: ElementRef;
+  @ViewChild('overdriveField') overdriveField!: ElementRef;
+  @ViewChild('overdriveTitle') overdriveTitle!: ElementRef;
 
   graph: CanvasRenderingContext2D | null = null;
   graphMirror: CanvasRenderingContext2D | null = null;
@@ -63,6 +69,8 @@ export class AppComponent {
   isCutoff: boolean = false;
   isDelay: boolean = false;
   isReverb: boolean = false;
+  isWahWah: boolean = false;
+  isOverdrive: boolean = false;
   cutoff: number = 50;
   cutoffHigh: number = 20;
   delayTime: number = 1;
@@ -71,6 +79,7 @@ export class AppComponent {
   wetGainValue: number = 0.5;
   qFactor: number = 2;
   chain: string[] = [];
+  impulseIndex: number = 0;
 
   animationReq: number = 0;
 
@@ -147,7 +156,12 @@ export class AppComponent {
 
   loadImpulseFiles() {
     const soundPath = 'assets/impulses/';
-    const soundFileNames = ['large.wav', 'punch.wav'];
+    const soundFileNames = [
+      '01_small.wav',
+      '02_medium.wav',
+      '03_large.wav',
+      '04_ultralarge.wav',
+    ];
 
     soundFileNames.forEach((fileName) => {
       fetch(soundPath + fileName)
@@ -157,6 +171,7 @@ export class AppComponent {
           this.impulseFiles.push(file);
         });
     });
+    this.impulseFiles.sort((a, b) => (a.name < b.name ? -1 : 1));
   }
 
   getImpulseBuffer() {
@@ -168,10 +183,14 @@ export class AppComponent {
         this.impulseBuffer = audioBuffer;
       });
     };
-    if (this.impulseFiles[0] != null) {
-      console.log(this.impulseFiles[0]);
-      reader.readAsArrayBuffer(this.impulseFiles[0]);
+    if (this.impulseFiles[this.impulseIndex] != null) {
+      reader.readAsArrayBuffer(this.impulseFiles[this.impulseIndex]);
     }
+  }
+
+  changeImpulseBuffer() {
+    this.getImpulseBuffer();
+    this.reverb.buffer = this.impulseBuffer;
   }
 
   openMenu() {
@@ -259,27 +278,25 @@ export class AppComponent {
   }
 
   setCutoff(source: AudioBufferSourceNode, position: number) {
-    if (this.isCutoff) {
-      this.filterLow.type = 'lowpass';
-      this.filterLow.frequency.value = this.cutoff;
-      this.filterLow.Q.value = this.qFactor;
-      if (position == 0) {
-        source.connect(this.filterLow);
-      } else {
-        if (this.chain[position - 1] == 'delay') {
-          this.delay.connect(this.filterLow);
-        }
-        if (this.chain[position - 1] == 'reverb') {
-          this.output.connect(this.filterLow);
-        }
+    this.filterLow.type = 'lowpass';
+    this.filterLow.frequency.value = this.cutoff;
+    this.filterLow.Q.value = this.qFactor;
+    if (position == 0) {
+      source.connect(this.filterLow);
+    } else {
+      if (this.chain[position - 1] == 'delay') {
+        this.delay.connect(this.filterLow);
       }
-      this.filterHigh.type = 'highpass';
-      this.filterHigh.frequency.value = this.cutoffHigh;
-      this.filterHigh.Q.value = this.qFactor;
-      this.filterLow.connect(this.filterHigh);
-      if (this.chain[this.chain.length - 1] == 'cutoff') {
-        this.filterHigh.connect(this.analyser);
+      if (this.chain[position - 1] == 'reverb') {
+        this.output.connect(this.filterLow);
       }
+    }
+    this.filterHigh.type = 'highpass';
+    this.filterHigh.frequency.value = this.cutoffHigh;
+    this.filterHigh.Q.value = this.qFactor;
+    this.filterLow.connect(this.filterHigh);
+    if (this.chain[this.chain.length - 1] == 'cutoff') {
+      this.filterHigh.connect(this.analyser);
     }
   }
 
@@ -394,6 +411,24 @@ export class AppComponent {
     const c = rectCursor.left;
     const tc = rectCursor.top;
     let x = (c - l) / (r - l);
+    console.log('Base: ' + x);
+    if (x <= 0.25 && this.impulseIndex != 0) {
+      this.impulseIndex = 0;
+      this.changeImpulseBuffer();
+    }
+    if (x > 0.25 && x <= 0.5 && this.impulseIndex != 1) {
+      console.log(x);
+      this.impulseIndex = 1;
+      this.changeImpulseBuffer();
+    }
+    if (x > 0.5 && x <= 0.75 && this.impulseIndex != 2) {
+      this.impulseIndex = 2;
+      this.changeImpulseBuffer();
+    }
+    if (x > 0.75 && this.impulseIndex != 3) {
+      this.impulseIndex = 3;
+      this.changeImpulseBuffer();
+    }
 
     let y = (tc - d) / (t - d);
     this.dryGainValue = 1.0 - y;
@@ -548,7 +583,6 @@ export class AppComponent {
       this.delayTitle.nativeElement.style.opacity = '0.5';
       var index = this.chain.indexOf('delay');
       this.chain.splice(index, 1);
-      console.log(this.chain);
     }
   }
 
@@ -562,6 +596,26 @@ export class AppComponent {
       this.reverbTitle.nativeElement.style.opacity = '0.5';
       var index = this.chain.indexOf('reverb');
       this.chain.splice(index, 1);
+    }
+  }
+
+  activateWahWah() {
+    if (this.isWahWah == false) {
+      this.isWahWah = true;
+      this.wahwahTitle.nativeElement.style.opacity = '1.0';
+    } else {
+      this.isWahWah = false;
+      this.wahwahTitle.nativeElement.style.opacity = '0.5';
+    }
+  }
+
+  activateOverdrive() {
+    if (this.isOverdrive == false) {
+      this.isOverdrive = true;
+      this.overdriveTitle.nativeElement.style.opacity = '1.0';
+    } else {
+      this.isOverdrive = false;
+      this.overdriveTitle.nativeElement.style.opacity = '0.5';
     }
   }
 }

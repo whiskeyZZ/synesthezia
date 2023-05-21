@@ -1,7 +1,35 @@
 <div class="container">
   <h1 class="title">S y n e s t h e z i a</h1>
-  <canvas id="graph"> </canvas>
-  <canvas id="graph_mirror"></canvas>
+  <div class="top_container">
+    <div class="sub_overdrive">
+      <div #overdriveField class="field" id="overdrive">
+        <div
+          #overdriveCursor
+          class="cursor"
+          cdkDragBoundary=".field"
+          cdkDrag
+        ></div>
+      </div>
+      <p #overdriveTitle class="subtitle" (click)="activateOverdrive()">
+        Overdrive
+      </p>
+    </div>
+    <div class="canvas_container">
+      <canvas id="graph"> </canvas>
+      <canvas id="graph_mirror"></canvas>
+    </div>
+    <div class="sub_wahwah">
+      <div #wahwahField class="field" id="wahwah">
+        <div
+          #wahwahCursor
+          class="cursor"
+          cdkDragBoundary=".field"
+          cdkDrag
+        ></div>
+      </div>
+      <p #wahwahTitle class="subtitle" (click)="activateWahWah()">WahWah</p>
+    </div>
+  </div>
   <div class="field_container">
     <div>
       <div #delayField class="field" id="delay">
