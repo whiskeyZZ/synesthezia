@@ -35,6 +35,12 @@ export class AppComponent {
   wetGain = this.context.createGain();
   output = this.context.createGain();
 
+  //wahwah nodes
+  modulationGain = this.context.createGain();
+  filterBp = this.context.createBiquadFilter();
+  filterPeaking = this.context.createBiquadFilter();
+  lfo = this.context.createOscillator();
+
   analyser: AnalyserNode = this.context.createAnalyser();
 
   canvas: HTMLCanvasElement | null = null;
@@ -77,9 +83,13 @@ export class AppComponent {
   delayFeedback: number = 0.1;
   dryGainValue: number = 0.5;
   wetGainValue: number = 0.5;
+  wahwahPeaking: number = 1;
+  wahwahFrequencyMin: number = 200;
+  wahwahFrequencyMax: number = 2000;
   qFactor: number = 2;
   chain: string[] = [];
   impulseIndex: number = 0;
+  wahwahTime: number = 0;
 
   animationReq: number = 0;
 
@@ -215,6 +225,11 @@ export class AppComponent {
     this.filterHighReverb = this.context.createBiquadFilter();
     this.wetGain = this.context.createGain();
     this.output = this.context.createGain();
+
+    this.modulationGain = this.context.createGain();
+    this.filterBp = this.context.createBiquadFilter();
+    this.filterPeaking = this.context.createBiquadFilter();
+    this.lfo = this.context.createOscillator();
   }
 
   play() {
@@ -246,6 +261,9 @@ export class AppComponent {
       }
       if (this.chain[0] == 'reverb') {
         this.setReverb(this.source, 0);
+      }
+      if (this.chain[0] == 'wahwah') {
+        this.setWahWah(this.source, 0);
       }
     } else {
       this.source.connect(this.analyser);
@@ -355,6 +373,53 @@ export class AppComponent {
     }
   }
 
+  setWahWah(source: AudioBufferSourceNode, position: number) {
+    //this.activateNode.connect(this.filterBp);
+    //this.filterBp.connect(this.filterPeaking);
+    //this.filterPeaking.connect(this.output);
+    //resonance --> filterPeaking.Q.value
+    //this.filterBp.frequency.value = Math.min(22050, this._baseFrequency + this._excursionFrequency * this._sweep);
+    //this.filterPeaking.frequency.value
+    if (position == 0) {
+      source.connect(this.filterBp);
+    }
+    this.filterBp.type = 'bandpass';
+    this.filterBp.frequency.value = this.wahwahFrequencyMin;
+    this.filterBp.Q.value = this.wahwahPeaking;
+    this.modulationGain.gain.value = 1;
+    //this.lfo.type = 'sine';
+    //this.lfo.frequency.value = 1;
+    //this.lfo.connect(this.modulationGain);
+    //this.filterBp.connect(this.modulationGain);
+
+    if (this.chain[this.chain.length - 1] == 'wahwah') {
+      this.filterBp.connect(this.analyser);
+    }
+    this.wahwahEffect();
+  }
+
+  wahwahEffect() {
+    this.wahwahTime = this.context.currentTime;
+    console.log(this.wahwahTime);
+    const duration = 1;
+    this.filterBp.frequency.setValueAtTime(
+      this.wahwahFrequencyMin,
+      this.wahwahTime
+    );
+    this.filterBp.frequency.linearRampToValueAtTime(
+      this.wahwahFrequencyMax,
+      this.wahwahTime + duration
+    );
+    this.filterBp.frequency.linearRampToValueAtTime(
+      this.wahwahFrequencyMin,
+      this.wahwahTime + 2 * duration
+    );
+
+    setTimeout(() => {
+      this.wahwahEffect();
+    }, 3000);
+  }
+
   calcCutoff() {
     const rect = this.cutoffField.nativeElement.getBoundingClientRect();
     const l = rect.left;
@@ -436,6 +501,30 @@ export class AppComponent {
 
     this.dryGain.gain.value = this.dryGainValue;
     this.wetGain.gain.value = this.wetGainValue;
+  }
+
+  calcWahWah() {
+    const rect = this.wahwahField.nativeElement.getBoundingClientRect();
+    const l = rect.left;
+    const r = rect.right;
+    const t = rect.top;
+    const d = rect.bottom;
+    const rectCursor = this.wahwahCursor.nativeElement.getBoundingClientRect();
+    const c = rectCursor.left;
+    const tc = rectCursor.top;
+    const x = (c - l) / (r - l);
+    this.wahwahFrequencyMin = (17000 * Math.pow(x, 2)) / 10;
+    if (this.wahwahFrequencyMin < 20) {
+      this.wahwahFrequencyMin = 20;
+    }
+    this.wahwahFrequencyMax = this.wahwahFrequencyMin * 10;
+    let y = (tc - d) / (t - d);
+    y = Math.pow(y, 2) * 1000;
+    this.wahwahPeaking = y;
+
+    //this.filterBp.frequency.value = this.wahwahFrequencyMin;
+    this.filterBp.Q.value = this.wahwahPeaking;
+    console.log(this.wahwahPeaking);
   }
 
   draw() {
@@ -603,9 +692,12 @@ export class AppComponent {
     if (this.isWahWah == false) {
       this.isWahWah = true;
       this.wahwahTitle.nativeElement.style.opacity = '1.0';
+      this.chain.push('wahwah');
     } else {
       this.isWahWah = false;
       this.wahwahTitle.nativeElement.style.opacity = '0.5';
+      var index = this.chain.indexOf('wahwah');
+      this.chain.splice(index, 1);
     }
   }
 

@@ -25,6 +25,7 @@
           class="cursor"
           cdkDragBoundary=".field"
           cdkDrag
+          (mousemove)="calcWahWah()"
         ></div>
       </div>
       <p #wahwahTitle class="subtitle" (click)="activateWahWah()">WahWah</p>
