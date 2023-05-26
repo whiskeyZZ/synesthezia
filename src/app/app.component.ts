@@ -41,6 +41,9 @@ export class AppComponent {
   filterPeaking = this.context.createBiquadFilter();
   lfo = this.context.createOscillator();
 
+  //overdrive nodes
+  overdrive = this.context.createWaveShaper();
+
   analyser: AnalyserNode = this.context.createAnalyser();
 
   canvas: HTMLCanvasElement | null = null;
@@ -90,12 +93,21 @@ export class AppComponent {
   chain: string[] = [];
   impulseIndex: number = 0;
   wahwahTime: number = 0;
+  timeout: ReturnType<typeof setTimeout> | null = null;
+  duration: number = 1;
+  overdriveAmount: number = 50;
 
   animationReq: number = 0;
 
   record: any;
   isRecording = false;
   url: any;
+
+  entry_one: string = '';
+  entry_two: string = '';
+  entry_three: string = '';
+  entry_four: string = '';
+  entry_five: string = '';
 
   constructor(public dialog: MatDialog, private domSanitizer: DomSanitizer) {
     this.addAudioFiles();
@@ -230,6 +242,8 @@ export class AppComponent {
     this.filterBp = this.context.createBiquadFilter();
     this.filterPeaking = this.context.createBiquadFilter();
     this.lfo = this.context.createOscillator();
+
+    this.overdrive = this.context.createWaveShaper();
   }
 
   play() {
@@ -242,6 +256,9 @@ export class AppComponent {
       if (this.source != null) {
         this.context.suspend();
         this.chooseFile(this.currentAudio);
+        if (this.timeout != null) {
+          clearTimeout(this.timeout);
+        }
         this.source.stop();
         this.resetDraw();
       }
@@ -262,8 +279,11 @@ export class AppComponent {
       if (this.chain[0] == 'reverb') {
         this.setReverb(this.source, 0);
       }
-      if (this.chain[0] == 'wahwah') {
+      if (this.chain[0] == 'space') {
         this.setWahWah(this.source, 0);
+      }
+      if (this.chain[0] == 'overdrive') {
+        this.setOverdrive(this.source, 0);
       }
     } else {
       this.source.connect(this.analyser);
@@ -278,6 +298,12 @@ export class AppComponent {
       if (this.chain[1] == 'reverb') {
         this.setReverb(this.source, 1);
       }
+      if (this.chain[1] == 'space') {
+        this.setWahWah(this.source, 1);
+      }
+      if (this.chain[1] == 'overdrive') {
+        this.setOverdrive(this.source, 1);
+      }
     }
     if (this.chain.length > 2) {
       if (this.chain[2] == 'cutoff') {
@@ -289,7 +315,48 @@ export class AppComponent {
       if (this.chain[2] == 'reverb') {
         this.setReverb(this.source, 2);
       }
+      if (this.chain[2] == 'space') {
+        this.setWahWah(this.source, 2);
+      }
+      if (this.chain[2] == 'overdrive') {
+        this.setOverdrive(this.source, 2);
+      }
     }
+    if (this.chain.length > 3) {
+      if (this.chain[3] == 'cutoff') {
+        this.setCutoff(this.source, 3);
+      }
+      if (this.chain[3] == 'delay') {
+        this.setDelay(this.source, 3);
+      }
+      if (this.chain[3] == 'reverb') {
+        this.setReverb(this.source, 3);
+      }
+      if (this.chain[3] == 'space') {
+        this.setWahWah(this.source, 3);
+      }
+      if (this.chain[3] == 'overdrive') {
+        this.setOverdrive(this.source, 3);
+      }
+    }
+    if (this.chain.length > 4) {
+      if (this.chain[4] == 'cutoff') {
+        this.setCutoff(this.source, 4);
+      }
+      if (this.chain[4] == 'delay') {
+        this.setDelay(this.source, 4);
+      }
+      if (this.chain[4] == 'reverb') {
+        this.setReverb(this.source, 4);
+      }
+      if (this.chain[4] == 'space') {
+        this.setWahWah(this.source, 4);
+      }
+      if (this.chain[4] == 'overdrive') {
+        this.setOverdrive(this.source, 4);
+      }
+    }
+
     this.analyser.connect(this.context.destination);
     this.source.start();
     this.draw();
@@ -307,6 +374,12 @@ export class AppComponent {
       }
       if (this.chain[position - 1] == 'reverb') {
         this.output.connect(this.filterLow);
+      }
+      if (this.chain[position - 1] == 'space') {
+        this.filterBp.connect(this.filterLow);
+      }
+      if (this.chain[position - 1] == 'overdrive') {
+        this.overdrive.connect(this.filterLow);
       }
     }
     this.filterHigh.type = 'highpass';
@@ -330,7 +403,14 @@ export class AppComponent {
       if (this.chain[position - 1] == 'reverb') {
         this.output.connect(this.delay);
       }
+      if (this.chain[position - 1] == 'space') {
+        this.filterBp.connect(this.delay);
+      }
+      if (this.chain[position - 1] == 'overdrive') {
+        this.overdrive.connect(this.delay);
+      }
     }
+
     this.delay.connect(this.feedback);
     this.feedback.connect(this.delay);
     if (this.chain[this.chain.length - 1] == 'delay') {
@@ -347,6 +427,12 @@ export class AppComponent {
       }
       if (this.chain[position - 1] == 'delay') {
         this.delay.connect(this.activateNode);
+      }
+      if (this.chain[position - 1] == 'space') {
+        this.filterBp.connect(this.activateNode);
+      }
+      if (this.chain[position - 1] == 'overdrive') {
+        this.overdrive.connect(this.activateNode);
       }
     }
     this.getImpulseBuffer();
@@ -374,50 +460,90 @@ export class AppComponent {
   }
 
   setWahWah(source: AudioBufferSourceNode, position: number) {
-    //this.activateNode.connect(this.filterBp);
-    //this.filterBp.connect(this.filterPeaking);
-    //this.filterPeaking.connect(this.output);
-    //resonance --> filterPeaking.Q.value
-    //this.filterBp.frequency.value = Math.min(22050, this._baseFrequency + this._excursionFrequency * this._sweep);
-    //this.filterPeaking.frequency.value
     if (position == 0) {
       source.connect(this.filterBp);
+    } else {
+      if (this.chain[position - 1] == 'cutoff') {
+        this.filterHigh.connect(this.filterBp);
+      }
+      if (this.chain[position - 1] == 'delay') {
+        this.delay.connect(this.filterBp);
+      }
+      if (this.chain[position - 1] == 'reverb') {
+        this.output.connect(this.filterBp);
+      }
+      if (this.chain[position - 1] == 'overdrive') {
+        this.overdrive.connect(this.filterBp);
+      }
     }
+
     this.filterBp.type = 'bandpass';
     this.filterBp.frequency.value = this.wahwahFrequencyMin;
     this.filterBp.Q.value = this.wahwahPeaking;
-    this.modulationGain.gain.value = 1;
-    //this.lfo.type = 'sine';
-    //this.lfo.frequency.value = 1;
-    //this.lfo.connect(this.modulationGain);
-    //this.filterBp.connect(this.modulationGain);
 
-    if (this.chain[this.chain.length - 1] == 'wahwah') {
+    if (this.chain[this.chain.length - 1] == 'space') {
       this.filterBp.connect(this.analyser);
     }
     this.wahwahEffect();
   }
 
+  setOverdrive(source: AudioBufferSourceNode, position: number) {
+    if (position == 0) {
+      source.connect(this.overdrive);
+    } else {
+      if (this.chain[position - 1] == 'cutoff') {
+        this.filterHigh.connect(this.overdrive);
+      }
+      if (this.chain[position - 1] == 'delay') {
+        this.delay.connect(this.overdrive);
+      }
+      if (this.chain[position - 1] == 'reverb') {
+        this.output.connect(this.overdrive);
+      }
+      if (this.chain[position - 1] == 'space') {
+        this.filterBp.connect(this.overdrive);
+      }
+    }
+
+    this.overdrive.curve = this.makeDistortionCurve(this.overdriveAmount);
+
+    if (this.chain[this.chain.length - 1] == 'overdrive') {
+      this.overdrive.connect(this.analyser);
+    }
+  }
+
+  makeDistortionCurve(amount: number) {
+    const k = amount;
+    const n_samples = 44100;
+    const curve = new Float32Array(n_samples);
+    const deg = Math.PI / 180;
+
+    for (let i = 0; i < n_samples; i++) {
+      const x = (i * 2) / n_samples - 1;
+      curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * Math.abs(x));
+    }
+    return curve;
+  }
+
   wahwahEffect() {
     this.wahwahTime = this.context.currentTime;
-    console.log(this.wahwahTime);
-    const duration = 1;
+
     this.filterBp.frequency.setValueAtTime(
       this.wahwahFrequencyMin,
       this.wahwahTime
     );
     this.filterBp.frequency.linearRampToValueAtTime(
       this.wahwahFrequencyMax,
-      this.wahwahTime + duration
+      this.wahwahTime + this.duration
     );
     this.filterBp.frequency.linearRampToValueAtTime(
       this.wahwahFrequencyMin,
-      this.wahwahTime + 2 * duration
+      this.wahwahTime + 2 * this.duration
     );
 
-    setTimeout(() => {
+    this.timeout = setTimeout(() => {
       this.wahwahEffect();
-    }, 3000);
+    }, 3000 * this.duration);
   }
 
   calcCutoff() {
@@ -519,12 +645,29 @@ export class AppComponent {
     }
     this.wahwahFrequencyMax = this.wahwahFrequencyMin * 10;
     let y = (tc - d) / (t - d);
-    y = Math.pow(y, 2) * 1000;
-    this.wahwahPeaking = y;
+    let y_freq = Math.pow(y, 2) * 1000;
+    this.wahwahPeaking = y_freq;
+    this.duration = 1 - y;
 
-    //this.filterBp.frequency.value = this.wahwahFrequencyMin;
     this.filterBp.Q.value = this.wahwahPeaking;
-    console.log(this.wahwahPeaking);
+  }
+
+  calcOverdrive() {
+    const rect = this.overdriveField.nativeElement.getBoundingClientRect();
+    const l = rect.left;
+    const r = rect.right;
+    const t = rect.top;
+    const d = rect.bottom;
+    const rectCursor =
+      this.overdriveCursor.nativeElement.getBoundingClientRect();
+    const c = rectCursor.left;
+    const tc = rectCursor.top;
+    const x = (c - l) / (r - l);
+
+    let amount = (x / 2) * 500;
+    this.overdriveAmount = amount;
+
+    this.overdrive.curve = this.makeDistortionCurve(this.overdriveAmount);
   }
 
   draw() {
@@ -659,6 +802,7 @@ export class AppComponent {
       var index = this.chain.indexOf('cutoff');
       this.chain.splice(index, 1);
     }
+    this.displayChain();
   }
 
   activateDelay() {
@@ -673,6 +817,7 @@ export class AppComponent {
       var index = this.chain.indexOf('delay');
       this.chain.splice(index, 1);
     }
+    this.displayChain();
   }
 
   activateReverb() {
@@ -686,28 +831,58 @@ export class AppComponent {
       var index = this.chain.indexOf('reverb');
       this.chain.splice(index, 1);
     }
+    this.displayChain();
   }
 
   activateWahWah() {
     if (this.isWahWah == false) {
       this.isWahWah = true;
       this.wahwahTitle.nativeElement.style.opacity = '1.0';
-      this.chain.push('wahwah');
+      this.chain.push('space');
     } else {
       this.isWahWah = false;
       this.wahwahTitle.nativeElement.style.opacity = '0.5';
-      var index = this.chain.indexOf('wahwah');
+      var index = this.chain.indexOf('space');
       this.chain.splice(index, 1);
     }
+    this.displayChain();
   }
 
   activateOverdrive() {
     if (this.isOverdrive == false) {
       this.isOverdrive = true;
       this.overdriveTitle.nativeElement.style.opacity = '1.0';
+      this.chain.push('overdrive');
     } else {
       this.isOverdrive = false;
       this.overdriveTitle.nativeElement.style.opacity = '0.5';
+      var index = this.chain.indexOf('overdrive');
+      this.chain.splice(index, 1);
+    }
+    this.displayChain();
+  }
+
+  displayChain() {
+    this.entry_one = '';
+    this.entry_two = '';
+    this.entry_three = '';
+    this.entry_four = '';
+    this.entry_five = '';
+
+    if (this.chain[0] != null) {
+      this.entry_one = ' > ' + this.chain[0];
+    }
+    if (this.chain[1] != null) {
+      this.entry_two = ' > ' + this.chain[1];
+    }
+    if (this.chain[2] != null) {
+      this.entry_three = ' > ' + this.chain[2];
+    }
+    if (this.chain[3] != null) {
+      this.entry_four = ' > ' + this.chain[3];
+    }
+    if (this.chain[4] != null) {
+      this.entry_five = ' > ' + this.chain[4];
     }
   }
 }

@@ -58,7 +58,7 @@ mat-icon {
   position: relative;
   display: flex;
   margin: 20pt;
-  margin-top: 35pt;
+  margin-top: 10pt;
 }
 
 .cursor {
@@ -150,4 +150,10 @@ mat-icon {
   height: 100pt;
   transform: scale(1, -1);
   filter: FlipV;
+}
+
+.chain {
+  color: rgb(255, 255, 255);
+  font-size: 18pt;
+  height: 10pt;
 }

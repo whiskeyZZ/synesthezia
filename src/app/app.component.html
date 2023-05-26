@@ -8,6 +8,7 @@
           class="cursor"
           cdkDragBoundary=".field"
           cdkDrag
+          (mousemove)="calcOverdrive()"
         ></div>
       </div>
       <p #overdriveTitle class="subtitle" (click)="activateOverdrive()">
@@ -28,9 +29,13 @@
           (mousemove)="calcWahWah()"
         ></div>
       </div>
-      <p #wahwahTitle class="subtitle" (click)="activateWahWah()">WahWah</p>
+      <p #wahwahTitle class="subtitle" (click)="activateWahWah()">Space</p>
     </div>
   </div>
+  <p class="chain">
+    <span *ngIf="currentAudio != null">🎵</span> {{ entry_one }}
+    {{ entry_two }} {{ entry_three }} {{ entry_four }} {{ entry_five }}
+  </p>
   <div class="field_container">
     <div>
       <div #delayField class="field" id="delay">
