@@ -46,10 +46,17 @@ export class AppComponent {
 
   analyser: AnalyserNode = this.context.createAnalyser();
 
+  mediaStreamDestination = this.context.createMediaStreamDestination();
+  audioOutputStream = this.mediaStreamDestination.stream;
+  recorder = new RecordRTC(this.audioOutputStream, {
+    type: 'audio',
+  });
+
   canvas: HTMLCanvasElement | null = null;
   canvasMirror: HTMLCanvasElement | null = null;
 
   audioFiles: File[] = [];
+  downloadableFiles: File[] = [];
   fileList: FileList | null = null;
   currentAudio: File | null = null;
   impulseFiles: File[] = [];
@@ -96,6 +103,7 @@ export class AppComponent {
   timeout: ReturnType<typeof setTimeout> | null = null;
   duration: number = 1;
   overdriveAmount: number = 50;
+  soundIsRecording: boolean = false;
 
   animationReq: number = 0;
 
@@ -244,6 +252,12 @@ export class AppComponent {
     this.lfo = this.context.createOscillator();
 
     this.overdrive = this.context.createWaveShaper();
+
+    this.mediaStreamDestination = this.context.createMediaStreamDestination();
+    this.audioOutputStream = this.mediaStreamDestination.stream;
+    this.recorder = new RecordRTC(this.audioOutputStream, {
+      type: 'audio',
+    });
   }
 
   play() {
@@ -258,6 +272,19 @@ export class AppComponent {
         this.chooseFile(this.currentAudio);
         if (this.timeout != null) {
           clearTimeout(this.timeout);
+        }
+        if (this.soundIsRecording) {
+          this.recorder.stopRecording(() => {
+            const audioBlob = this.recorder.getBlob();
+            let dateTime = new Date();
+            let dateTimeString = dateTime.toLocaleString();
+            const recFile = new File(
+              [audioBlob],
+              'synesthezia_' + dateTimeString
+            );
+            this.audioFiles.push(recFile);
+            this.downloadableFiles.push(recFile);
+          });
         }
         this.source.stop();
         this.resetDraw();
@@ -358,6 +385,10 @@ export class AppComponent {
     }
 
     this.analyser.connect(this.context.destination);
+    if (this.soundIsRecording) {
+      this.analyser.connect(this.mediaStreamDestination);
+      this.recorder.startRecording();
+    }
     this.source.start();
     this.draw();
   }
@@ -602,7 +633,7 @@ export class AppComponent {
     const c = rectCursor.left;
     const tc = rectCursor.top;
     let x = (c - l) / (r - l);
-    console.log('Base: ' + x);
+
     if (x <= 0.25 && this.impulseIndex != 0) {
       this.impulseIndex = 0;
       this.changeImpulseBuffer();
@@ -639,6 +670,7 @@ export class AppComponent {
     const c = rectCursor.left;
     const tc = rectCursor.top;
     const x = (c - l) / (r - l);
+
     this.wahwahFrequencyMin = (17000 * Math.pow(x, 2)) / 10;
     if (this.wahwahFrequencyMin < 20) {
       this.wahwahFrequencyMin = 20;
@@ -884,5 +916,25 @@ export class AppComponent {
     if (this.chain[4] != null) {
       this.entry_five = ' > ' + this.chain[4];
     }
+  }
+
+  setupRecording() {
+    if (this.soundIsRecording == false && this.isPlaying == false) {
+      this.soundIsRecording = true;
+      console.log('test');
+    } else if (this.soundIsRecording == true && this.isPlaying == false) {
+      this.soundIsRecording = false;
+      console.log('test2');
+    }
+  }
+
+  downloadFile(file: File) {
+    const blob = new Blob([file], { type: 'audio/mpeg' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 }

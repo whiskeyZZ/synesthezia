@@ -110,12 +110,34 @@
       <mat-icon *ngIf="isPlaying == false">play_circle</mat-icon>
       <mat-icon *ngIf="isPlaying == true">stop_circle</mat-icon>
     </button>
-    <button class="btn" mat-icon-button color="primary">
-      <mat-icon>radio_button_unchecked</mat-icon>
+    <button
+      class="btn"
+      mat-icon-button
+      color="primary"
+      (click)="setupRecording()"
+    >
+      <mat-icon *ngIf="soundIsRecording == false"
+        >radio_button_unchecked</mat-icon
+      >
+      <mat-icon *ngIf="soundIsRecording == true">radio_button_checked</mat-icon>
     </button>
-    <button class="btn" mat-icon-button color="primary">
+    <button
+      class="btn"
+      mat-icon-button
+      color="primary"
+      [matMenuTriggerFor]="menu_two"
+    >
       <mat-icon>file_download</mat-icon>
     </button>
+    <mat-menu #menu_two="matMenu">
+      <button
+        mat-menu-item
+        *ngFor="let file of downloadableFiles"
+        (click)="downloadFile(file)"
+      >
+        {{ file.name }}
+      </button>
+    </mat-menu>
   </div>
 </div>
 <router-outlet></router-outlet>
