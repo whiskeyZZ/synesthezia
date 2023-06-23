@@ -315,7 +315,7 @@ export class AppComponent {
       if (this.chain[0] == 'space') {
         this.setWahWah(this.source, 0);
       }
-      if (this.chain[0] == 'overdrive') {
+      if (this.chain[0] == 'crash') {
         this.setOverdrive(this.source, 0);
       }
     } else {
@@ -334,7 +334,7 @@ export class AppComponent {
       if (this.chain[1] == 'space') {
         this.setWahWah(this.source, 1);
       }
-      if (this.chain[1] == 'overdrive') {
+      if (this.chain[1] == 'crash') {
         this.setOverdrive(this.source, 1);
       }
     }
@@ -351,7 +351,7 @@ export class AppComponent {
       if (this.chain[2] == 'space') {
         this.setWahWah(this.source, 2);
       }
-      if (this.chain[2] == 'overdrive') {
+      if (this.chain[2] == 'crash') {
         this.setOverdrive(this.source, 2);
       }
     }
@@ -368,7 +368,7 @@ export class AppComponent {
       if (this.chain[3] == 'space') {
         this.setWahWah(this.source, 3);
       }
-      if (this.chain[3] == 'overdrive') {
+      if (this.chain[3] == 'crash') {
         this.setOverdrive(this.source, 3);
       }
     }
@@ -385,7 +385,7 @@ export class AppComponent {
       if (this.chain[4] == 'space') {
         this.setWahWah(this.source, 4);
       }
-      if (this.chain[4] == 'overdrive') {
+      if (this.chain[4] == 'crash') {
         this.setOverdrive(this.source, 4);
       }
     }
@@ -415,7 +415,7 @@ export class AppComponent {
       if (this.chain[position - 1] == 'space') {
         this.filterBp.connect(this.filterLow);
       }
-      if (this.chain[position - 1] == 'overdrive') {
+      if (this.chain[position - 1] == 'crash') {
         this.overdrive.connect(this.filterLow);
       }
     }
@@ -443,7 +443,7 @@ export class AppComponent {
       if (this.chain[position - 1] == 'space') {
         this.filterBp.connect(this.delay);
       }
-      if (this.chain[position - 1] == 'overdrive') {
+      if (this.chain[position - 1] == 'crash') {
         this.overdrive.connect(this.delay);
       }
     }
@@ -468,7 +468,7 @@ export class AppComponent {
       if (this.chain[position - 1] == 'space') {
         this.filterBp.connect(this.activateNode);
       }
-      if (this.chain[position - 1] == 'overdrive') {
+      if (this.chain[position - 1] == 'crash') {
         this.overdrive.connect(this.activateNode);
       }
     }
@@ -509,7 +509,7 @@ export class AppComponent {
       if (this.chain[position - 1] == 'reverb') {
         this.output.connect(this.filterBp);
       }
-      if (this.chain[position - 1] == 'overdrive') {
+      if (this.chain[position - 1] == 'crash') {
         this.overdrive.connect(this.filterBp);
       }
     }
@@ -550,7 +550,7 @@ export class AppComponent {
     this.overdrive.curve = this.makeDistortionCurve(this.overdriveAmount);
     this.setBitcrush();
 
-    if (this.chain[this.chain.length - 1] == 'overdrive') {
+    if (this.chain[this.chain.length - 1] == 'crash') {
       this.overdrive.connect(this.analyser);
     }
   }
@@ -895,6 +895,10 @@ export class AppComponent {
       this.chain.splice(index, 1);
     }
     this.displayChain();
+    if (this.isPlaying == true) {
+      this.play();
+      this.play();
+    }
   }
 
   activateDelay() {
@@ -910,6 +914,10 @@ export class AppComponent {
       this.chain.splice(index, 1);
     }
     this.displayChain();
+    if (this.isPlaying == true) {
+      this.play();
+      this.play();
+    }
   }
 
   activateReverb() {
@@ -924,6 +932,10 @@ export class AppComponent {
       this.chain.splice(index, 1);
     }
     this.displayChain();
+    if (this.isPlaying == true) {
+      this.play();
+      this.play();
+    }
   }
 
   activateWahWah() {
@@ -938,20 +950,28 @@ export class AppComponent {
       this.chain.splice(index, 1);
     }
     this.displayChain();
+    if (this.isPlaying == true) {
+      this.play();
+      this.play();
+    }
   }
 
   activateOverdrive() {
     if (this.isOverdrive == false) {
       this.isOverdrive = true;
       this.overdriveTitle.nativeElement.style.opacity = '1.0';
-      this.chain.push('overdrive');
+      this.chain.push('crash');
     } else {
       this.isOverdrive = false;
       this.overdriveTitle.nativeElement.style.opacity = '0.5';
-      var index = this.chain.indexOf('overdrive');
+      var index = this.chain.indexOf('crash');
       this.chain.splice(index, 1);
     }
     this.displayChain();
+    if (this.isPlaying == true) {
+      this.play();
+      this.play();
+    }
   }
 
   displayChain() {
