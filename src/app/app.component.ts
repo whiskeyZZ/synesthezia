@@ -5,7 +5,7 @@ import { MatMenuTrigger } from '@angular/material/menu';
 import { DomSanitizer } from '@angular/platform-browser';
 import { InfoDialogComponent } from './info-dialog/info-dialog.component';
 
-//TODO: live adding of effects
+//TODO: live adding of effects, adding manual, adding new sample sounds
 
 @Component({
   selector: 'app-root',
@@ -19,6 +19,7 @@ export class AppComponent {
   impulseBuffer: AudioBuffer | null = null;
   source: AudioBufferSourceNode | null = null;
 
+  //filter nodes
   filterLow = this.context.createBiquadFilter();
   filterHigh = this.context.createBiquadFilter();
   delay = this.context.createDelay();
@@ -43,6 +44,9 @@ export class AppComponent {
 
   //overdrive nodes
   overdrive = this.context.createWaveShaper();
+
+  //bitcrush nodes
+  bitcrush = this.context.createScriptProcessor(4096, 1, 1);
 
   analyser: AnalyserNode = this.context.createAnalyser();
 
@@ -103,6 +107,7 @@ export class AppComponent {
   timeout: ReturnType<typeof setTimeout> | null = null;
   duration: number = 1;
   overdriveAmount: number = 50;
+  normFreq: number = 0.01;
   soundIsRecording: boolean = false;
 
   animationReq: number = 0;
@@ -252,6 +257,7 @@ export class AppComponent {
     this.lfo = this.context.createOscillator();
 
     this.overdrive = this.context.createWaveShaper();
+    this.bitcrush = this.context.createScriptProcessor(4096, 1, 1);
 
     this.mediaStreamDestination = this.context.createMediaStreamDestination();
     this.audioOutputStream = this.mediaStreamDestination.stream;
@@ -520,26 +526,68 @@ export class AppComponent {
 
   setOverdrive(source: AudioBufferSourceNode, position: number) {
     if (position == 0) {
-      source.connect(this.overdrive);
+      source.connect(this.bitcrush);
+      this.bitcrush.connect(this.overdrive);
     } else {
       if (this.chain[position - 1] == 'cutoff') {
-        this.filterHigh.connect(this.overdrive);
+        this.filterHigh.connect(this.bitcrush);
+        this.bitcrush.connect(this.overdrive);
       }
       if (this.chain[position - 1] == 'delay') {
-        this.delay.connect(this.overdrive);
+        this.delay.connect(this.bitcrush);
+        this.bitcrush.connect(this.overdrive);
       }
       if (this.chain[position - 1] == 'reverb') {
-        this.output.connect(this.overdrive);
+        this.output.connect(this.bitcrush);
+        this.bitcrush.connect(this.overdrive);
       }
       if (this.chain[position - 1] == 'space') {
-        this.filterBp.connect(this.overdrive);
+        this.filterBp.connect(this.bitcrush);
+        this.bitcrush.connect(this.overdrive);
       }
     }
 
     this.overdrive.curve = this.makeDistortionCurve(this.overdriveAmount);
+    this.setBitcrush();
 
     if (this.chain[this.chain.length - 1] == 'overdrive') {
       this.overdrive.connect(this.analyser);
+    }
+  }
+
+  setBitcrush() {
+    this.bitcrush.onaudioprocess = (e) => {
+      var phaser = 0;
+      var last = 0;
+      const input = e.inputBuffer.getChannelData(0);
+      const output = e.outputBuffer.getChannelData(0);
+      var step = Math.pow(1 / 2, 4);
+      var length = input.length;
+      for (let i = 0; i < length; i++) {
+        phaser += this.normFreq;
+        if (phaser >= 1.0) {
+          phaser -= 1.0;
+          last = step * Math.floor(input[i] / step + 0.5);
+        }
+        output[i] = last;
+      }
+    };
+  }
+
+  makeBitcrush(e: AudioProcessingEvent) {
+    var phaser = 0;
+    var last = 0;
+    const input = e.inputBuffer.getChannelData(0);
+    const output = e.outputBuffer.getChannelData(0);
+    var step = Math.pow(1 / 2, 4);
+    var length = input.length;
+    for (let i = 0; i < length; i++) {
+      phaser += this.normFreq;
+      if (phaser >= 1.0) {
+        phaser -= 1.0;
+        last = step * Math.floor(input[i] / step + 0.5);
+      }
+      output[i] = last;
     }
   }
 
@@ -688,18 +736,30 @@ export class AppComponent {
     const rect = this.overdriveField.nativeElement.getBoundingClientRect();
     const l = rect.left;
     const r = rect.right;
-    const t = rect.top;
-    const d = rect.bottom;
     const rectCursor =
       this.overdriveCursor.nativeElement.getBoundingClientRect();
     const c = rectCursor.left;
-    const tc = rectCursor.top;
     const x = (c - l) / (r - l);
 
     let amount = (x / 2) * 500;
     this.overdriveAmount = amount;
 
     this.overdrive.curve = this.makeDistortionCurve(this.overdriveAmount);
+
+    this.calcBitcrush();
+  }
+
+  calcBitcrush() {
+    const rect = this.overdriveField.nativeElement.getBoundingClientRect();
+    const rectCursor =
+      this.overdriveCursor.nativeElement.getBoundingClientRect();
+    const t = rect.top;
+    const d = rect.bottom;
+    const tc = rectCursor.top;
+    const x = (tc - d) / (t - d);
+
+    let amount = x / 10;
+    this.normFreq = amount;
   }
 
   draw() {
@@ -938,3 +998,5 @@ export class AppComponent {
     document.body.removeChild(link);
   }
 }
+
+class BitCrusher extends AudioWorkletNode {}
