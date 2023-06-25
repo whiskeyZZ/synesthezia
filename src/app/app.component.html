@@ -75,7 +75,13 @@
     </div>
   </div>
   <div class="btn_container">
-    <button class="btn" mat-raised-button color="primary" (click)="openInfo()">
+    <button
+      class="btn"
+      mat-raised-button
+      color="primary"
+      (click)="openInfo()"
+      title="Manual"
+    >
       <mat-icon>info</mat-icon>
     </button>
     <button
@@ -83,6 +89,7 @@
       mat-raised-button
       color="primary"
       [matMenuTriggerFor]="menu"
+      title="Sounds: Choose input sound"
     >
       <mat-icon>audio_file</mat-icon>
     </button>
@@ -100,13 +107,26 @@
       mat-raised-button
       color="primary"
       (click)="openFileManager()"
+      title="Upload sound file from file system"
     >
       <mat-icon>file_upload</mat-icon>
     </button>
-    <button class="btn" mat-raised-button color="primary" (click)="recording()">
+    <button
+      class="btn"
+      mat-raised-button
+      color="primary"
+      (click)="recording()"
+      title="Record via microfone"
+    >
       <mat-icon>mic</mat-icon>
     </button>
-    <button class="btn" mat-raised-button color="primary" (click)="play()">
+    <button
+      class="btn"
+      mat-raised-button
+      color="primary"
+      (click)="play()"
+      title="Play/Stop"
+    >
       <mat-icon *ngIf="isPlaying == false">play_circle</mat-icon>
       <mat-icon *ngIf="isPlaying == true">stop_circle</mat-icon>
     </button>
@@ -115,6 +135,7 @@
       mat-icon-button
       color="primary"
       (click)="setupRecording()"
+      title="Record sounds with effects (activate before play)"
     >
       <mat-icon *ngIf="soundIsRecording == false"
         >radio_button_unchecked</mat-icon
@@ -126,6 +147,7 @@
       mat-icon-button
       color="primary"
       [matMenuTriggerFor]="menu_two"
+      title="Download recorded sounds"
     >
       <mat-icon>file_download</mat-icon>
     </button>

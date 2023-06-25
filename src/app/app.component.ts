@@ -5,7 +5,7 @@ import { MatMenuTrigger } from '@angular/material/menu';
 import { DomSanitizer } from '@angular/platform-browser';
 import { InfoDialogComponent } from './info-dialog/info-dialog.component';
 
-//TODO: live adding of effects, adding manual, adding new sample sounds
+//TODO: adding manual
 
 @Component({
   selector: 'app-root',
@@ -37,7 +37,7 @@ export class AppComponent {
   output = this.context.createGain();
 
   //wahwah nodes
-  modulationGain = this.context.createGain();
+  spaceGain = this.context.createGain();
   filterBp = this.context.createBiquadFilter();
   filterPeaking = this.context.createBiquadFilter();
   lfo = this.context.createOscillator();
@@ -163,7 +163,7 @@ export class AppComponent {
 
   addAudioFiles() {
     const soundPath = 'assets/sounds/';
-    const soundFileNames = ['bell.mp3', 'rain.mp3', 'airplane.mp3'];
+    const soundFileNames = ['beat.mp3', 'choir.mp3', 'piano.mp3', 'string.mp3'];
 
     soundFileNames.forEach((fileName) => {
       fetch(soundPath + fileName)
@@ -251,7 +251,7 @@ export class AppComponent {
     this.wetGain = this.context.createGain();
     this.output = this.context.createGain();
 
-    this.modulationGain = this.context.createGain();
+    this.spaceGain = this.context.createGain();
     this.filterBp = this.context.createBiquadFilter();
     this.filterPeaking = this.context.createBiquadFilter();
     this.lfo = this.context.createOscillator();
@@ -498,25 +498,31 @@ export class AppComponent {
 
   setWahWah(source: AudioBufferSourceNode, position: number) {
     if (position == 0) {
-      source.connect(this.filterBp);
+      source.connect(this.spaceGain);
+      this.spaceGain.connect(this.filterBp);
     } else {
       if (this.chain[position - 1] == 'cutoff') {
-        this.filterHigh.connect(this.filterBp);
+        this.filterHigh.connect(this.spaceGain);
+        this.spaceGain.connect(this.filterBp);
       }
       if (this.chain[position - 1] == 'delay') {
-        this.delay.connect(this.filterBp);
+        this.delay.connect(this.spaceGain);
+        this.spaceGain.connect(this.filterBp);
       }
       if (this.chain[position - 1] == 'reverb') {
-        this.output.connect(this.filterBp);
+        this.output.connect(this.spaceGain);
+        this.spaceGain.connect(this.filterBp);
       }
       if (this.chain[position - 1] == 'crash') {
-        this.overdrive.connect(this.filterBp);
+        this.overdrive.connect(this.spaceGain);
+        this.spaceGain.connect(this.filterBp);
       }
     }
 
     this.filterBp.type = 'bandpass';
     this.filterBp.frequency.value = this.wahwahFrequencyMin;
     this.filterBp.Q.value = this.wahwahPeaking;
+    this.spaceGain.gain.value = 2.0;
 
     if (this.chain[this.chain.length - 1] == 'space') {
       this.filterBp.connect(this.analyser);

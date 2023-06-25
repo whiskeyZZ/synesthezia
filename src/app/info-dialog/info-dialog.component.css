@@ -1,0 +1,45 @@
+.bg {
+  background: #000000;
+}
+
+h1 {
+  color: white;
+  text-align: center;
+  font-size: 26pt;
+}
+
+h2 {
+  color: white;
+  text-align: center;
+  font-size: 20pt;
+}
+
+h3 {
+  text-align: center;
+  font-size: 18pt;
+}
+
+.delay {
+  color: rgb(129, 162, 224);
+}
+
+.cutoff {
+  color: rgb(0, 242, 255);
+}
+
+.reverb {
+  color: rgb(37, 240, 172);
+}
+
+.crash {
+  color: rgb(101, 42, 134);
+}
+
+.space {
+  color: rgb(241, 169, 35);
+}
+p {
+  color: white;
+  font-size: 14pt;
+  text-align: center;
+}
